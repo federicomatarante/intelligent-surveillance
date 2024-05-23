@@ -10,9 +10,7 @@ model = YOLO("yolov8n.pt")  # load a pretrained detection model (recommended for
 criterion= nn.CrossEntropyLoss()
 optimizer= torch.optim.Adam(model.parameters(), lr=0.001)
 
-# Load a dataset for training
-# Esegui il training del modello
-# Training loop
+# Load a dataset for training-> todo
 
 # Training loop
 for epoch in range(5):  # Number of epochs
