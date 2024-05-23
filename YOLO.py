@@ -10,14 +10,20 @@ model = YOLO("yolov8n.pt")  # load a pretrained detection model (recommended for
 criterion= nn.CrossEntropyLoss()
 optimizer= torch.optim.Adam(model.parameters(), lr=0.001)
 
-# Load a dataset for training-> todo
+# Load a dataset for training->todo
+# Instantiate the ViratDataset
+videos_dir = "path_to_videos"
+annotations_dir = "path_to_annotations"
+dataset = ViratDataset(videos_dir, annotations_dir)
 
 # Training loop
 for epoch in range(5):  # Number of epochs
     model.train()  # Set model to training mode
     running_loss = 0.0
 
-    for images, labels in train_loader:
+    for data in train_loader:
+        images = data["frames"]
+        labels = data["annotations"]
         optimizer.zero_grad()
         outputs = model(images)
         loss = criterion(outputs, labels)
