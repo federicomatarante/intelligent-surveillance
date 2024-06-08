@@ -24,7 +24,7 @@ class _KMLFileReader:
     """
 
     @staticmethod
-    def remove_metas(record: List[Dict[str, Any]]) -> List[Dict[str, Any]]:  # TODO use this!
+    def remove_metas(record: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Remove all the meta elements from the KML file.
         A meta element is one of the following:
