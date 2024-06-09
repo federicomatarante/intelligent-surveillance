@@ -258,7 +258,7 @@ class TrackedObject:
 
 
 _event_types = {
-    0: 'Pull',
+    0: 'None',
     1: 'activity_running',
     2: 'specialized_miscellaneous',
     3: 'Drop',
@@ -298,7 +298,8 @@ _event_types = {
     37: 'vehicle_stopping',
     38: 'activity_standing',
     39: 'Object_Transfer',
-    40: 'SetDown'
+    40: 'SetDown',
+    41: 'Pull',
 }
 
 
