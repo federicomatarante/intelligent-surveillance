@@ -94,6 +94,13 @@ class BoundingBox:
             occlusion=bbox_json['occlusion'],
         )
 
+    def copy(self):
+        """
+        Returns an exact copy of the object.
+        """
+        return BoundingBox.from_json(self.to_json())
+
+
 
 _tracked_object_labels = {
     0: 'Dumpster',
@@ -256,6 +263,11 @@ class TrackedObject:
             bounding_boxes=bboxes
         )
 
+    def copy(self):
+        """
+        Returns an exact copy of the object.
+        """
+        return TrackedObject.from_json(self.to_json())
 
 _event_types = {
     0: 'None',
@@ -311,9 +323,9 @@ class Event:
         event_id (int): unique id of the event ( in the current video clip ).
         start_frame (int): frame number of the start of the event.
         end_frame (int): frame number of the end of the event.
-        objects Dict[int, Tuple[int, int]]: list of all the objects involved in the event.
+        objects Dict[TrackedObject, Tuple[int, int]]: list of all the objects involved in the event.
             One example of record is:
-                [tracked_object_id]: (start_frame, end_frame)
+                [tracked_object]: (start_frame, end_frame)
             Where:
                 - start_frame: first frame number of the video in which there is the Object.
                 - end_frame: last frame number of the video in which there is the Object.
@@ -366,6 +378,14 @@ class Event:
     event_type: int
     objects: Dict[TrackedObject, Tuple[int, int]]
 
+
+    @property
+    def tracked_objects(self) -> List[TrackedObject]:
+        """
+        :return: list of all the objects involved in the event.
+        """
+        return list(self.objects.keys())
+
     @staticmethod
     def get_label_number(label: str):
         """
@@ -377,6 +397,15 @@ class Event:
             if label == event_type:
                 return number
         raise ValueError(f"{label} is not a valid label.")
+
+    @staticmethod
+    def get_label_name(event_type: int):
+        """
+        Converts a label to its string value.
+        :param event_type: the label to convert.
+        :return: the converted label.
+        """
+        return _event_types[event_type]
 
     @property
     def label_name(self):
@@ -451,12 +480,19 @@ class Event:
         }
         :return: an 'Event' object.
         """
+        objects = {}
+        for track, (start_frame, end_frame) in json['objects']:
+            objects.update(
+                {
+                    TrackedObject.from_json(track): (start_frame,end_frame)
+                }
+            )
         return Event(
             event_id=json["event_id"],
             start_frame=json['start_frame'],
             end_frame=json['end_frame'],
             event_type=json['event_type'],
-            objects=json['objects'],
+            objects=objects,
         )
 
     def to_json(self) -> Dict[Any, Any]:
@@ -473,14 +509,23 @@ class Event:
                 ]
             }
             """
+        objects_jsons = tuple(
+            (obj.to_json(), (start, end)) for obj, (start, end) in self.objects.items()
+        )
         event_json = {
             'event_id': self.event_id,
             'start_frame': self.start_frame,
             'end_frame': self.end_frame,
             'event_type': self.event_type,
-            'objects': [obj.to_json() for obj in self.objects]
+            'objects': objects_jsons,
         }
         return event_json
+
+    def copy(self):
+        """
+        Returns an exact copy of the object.
+        """
+        return Event.from_json(self.to_json())
 
 
 @dataclass
@@ -541,3 +586,10 @@ class Annotations:
                 Event.from_json(ev_json) for ev_json in json["events"]
             ]
         )
+
+
+    def copy(self):
+        """
+        Returns an exact copy of the object.
+        """
+        return Annotations.from_json(self.to_json())
