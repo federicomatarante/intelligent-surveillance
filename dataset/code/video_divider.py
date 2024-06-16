@@ -330,8 +330,6 @@ class VideosDivider:
         self.image_extension = image_extension
         self.frames_offset = frames_offset
         self.event_window_offset = event_window_offset
-
-        # TODO document what happens in constructors ( in all the classes )
         # Create folders if not exist
         os.makedirs(self.events_folder, exist_ok=True)
         os.makedirs(self.tracking_folder, exist_ok=True)
