@@ -55,7 +55,6 @@ class AnnotationsDatabase:
         return Annotations.from_json(annotations_data)
 
     def save(self, video_id: str, annotations_id: str, annotations: Annotations):
-
         annotations_path = os.path.join(self.database_path, fr"{video_id}.{annotations_id}.annotations")
         with open(annotations_path, 'wb') as f:
             pickle.dump(annotations.to_json(), f)
@@ -65,6 +64,12 @@ class AnnotationsDatabase:
         annotations_path = self.annotation_paths[video_id]
         os.remove(annotations_path)
         del self.annotation_paths[video_id]
+
+    def get_ids(self):
+        """
+        :return: The list of the IDs in the database, meaning the elements possible to retrieve from the database.
+        """
+        return list(self.annotation_paths.keys())
 
 
 class VideosDatabase:
@@ -128,6 +133,12 @@ class VideosDatabase:
         os.remove(video_path)
         del self.video_paths[video_id]
 
+    def get_ids(self):
+        """
+        :return: The list of the IDs in the database, meaning the elements possible to retrieve from the database.
+        """
+        return list(self.video_paths.keys())
+
 
 class ImagesDatabase:
     """
@@ -172,3 +183,10 @@ class ImagesDatabase:
         image_path = self.image_paths[image_id]
         os.remove(image_path)
         del self.image_paths[image_id]
+
+    def get_ids(self):
+        """
+        :return: The list of the IDs in the database, meaning the elements possible to retrieve from the database.
+        """
+        return list(self.image_paths.keys())
+
