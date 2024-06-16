@@ -347,6 +347,13 @@ class AnnotationsReader:
         self.annotations_dir = annotations_dir
         self.annotation_files = self._get_annotation_files()
 
+    @property
+    def annotation_ids(self) -> List[str]:
+        """
+        :return: the IDS of all the readable annotations.
+        """
+        return list(self.annotation_files.keys())
+
     def _get_annotation_files(self) -> Dict[str, Dict[str, str]]:
         """
         Reads the annotations file names in the annotations directory and returns a dictionary
@@ -374,7 +381,7 @@ class AnnotationsReader:
             annotation_files[video_id][annotation_type] = os.path.join(self.annotations_dir, filename)
         return annotation_files
 
-    def read_one_video(self, video_id: str) -> Annotations:
+    def read_one_annotation(self, video_id: str) -> Annotations:
         """
         Given the video ID, returns the annotations of the video.
         NB: the video ID is the first part of the file name, for example, given:
