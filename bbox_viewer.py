@@ -34,7 +34,7 @@ def _check_overlap(bbox1, bbox2, overlap_threshold=0.9):
     bbox1_area = (bbox1["x2"] - bbox1["x1"] + 1) * (bbox1["y2"] - bbox1["y1"] + 1)
     bbox2_area = (bbox2["x2"] - bbox2["x1"] + 1) * (bbox2["y2"] - bbox2["y1"] + 1)
 
-    overlap_area = intersection_area / float(bbox1_area + bbox2_area - intersection_area)
+    overlap_area = intersection_area / max(0.1,float(bbox1_area + bbox2_area - intersection_area))
 
     # Verifica se un bounding box è completamente contenuto nell'altro
     if (bbox1["x1"] >= bbox2["x1"] and bbox1["x2"] <= bbox2["x2"] and
@@ -134,6 +134,7 @@ def merge_overlapping_bboxes_events(events, overlap_threshold=0.9):
                 colors[new_bbox["id"]] = (random.randrange(256), random.randrange(256), random.randrange(256))
     return bboxes_data, colors
 
+
 def show_tracked_image(image: np.ndarray, events: List[Event] = None, tracked_objects: List[TrackedObject] = None):
     """
     Given an image, it shows all the tracked objects in it as bounding boxes.
@@ -170,6 +171,7 @@ def show_tracked_video(video_frames: np.ndarray, events: List[Event] = None,
                        tracked_objects: List[TrackedObject] = None):
     """
     Given a video, it shows all the tracked objects in it as bounding boxes.
+    Press q to close a running video.
     :param video_frames: the video to be displayed.
     :param events: the list of events to be displayed as bounding boxes.
     :param tracked_objects: the list of objects to be displayed as bounding boxes.
@@ -186,7 +188,7 @@ def show_tracked_video(video_frames: np.ndarray, events: List[Event] = None,
 
     total_frames = len(video_frames)
     frame_idx = 0
-    while frame_idx<total_frames:
+    while frame_idx < total_frames:
         frame = video_frames[frame_idx]
 
         if frame_idx in bboxes_data:
@@ -194,7 +196,8 @@ def show_tracked_video(video_frames: np.ndarray, events: List[Event] = None,
                 x1, y1, x2, y2 = bbox["x1"], bbox["y1"], bbox["x2"], bbox["y2"]
                 color = colors[bbox['id']]
                 cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-                _draw_text_with_newlines(frame, "Labels: " + bbox["label"], x1, y1, color, cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                _draw_text_with_newlines(frame, "Labels: " + bbox["label"], x1, y1, color, cv2.FONT_HERSHEY_SIMPLEX,
+                                         0.5,
                                          2)
                 cv2.putText(frame, "IDs: " + str(bbox["id"]), (x1, y2 + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
         font = cv2.FONT_HERSHEY_SIMPLEX
