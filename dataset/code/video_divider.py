@@ -1,11 +1,11 @@
 import os
+import random
 from typing import Dict, List, Tuple, Any, Set
 
 import cv2
 
 from annotations import Annotations, BoundingBox
 from dataset.code.annotations import TrackedObject, Event
-from dataset.code.annotations_parser import AnnotationsReader
 from dataset.code.database import AnnotationsDatabase
 
 
@@ -101,10 +101,17 @@ class _VideoSegmentator:
             frame: frames[frame] for frame in sorted(frames_numbers)[::sampling_rate]
         }
 
-    def get_events_tracking_segmentation(self) -> list[tuple[Event, dict[str, Any]]]:
+    def get_events_tracking_segmentation(self, video_size: Tuple[int, int], offset: int = 5) -> list[
+        tuple[Event, dict[str, Any]]]:
         """
         Returns a mapping of each event to the coordinates of the part of the video
         belonging to the tracked object.
+        It also edits "objects" field of the event, putting the right (start_frame, end_frame) and the right bounding
+        boxes coordinates.
+        Notice! The bounding boxes coordinates are wrong! It should not be a problem.
+
+        :param offset: the offset of pixels to add in each direction. Default is 5.
+        :param video_size: the size of the video in the format (width, height).
         :return: a list of tuples where each tuple is of the form
         (event, {
             x1: top-left corner x-coordinate,
@@ -114,17 +121,83 @@ class _VideoSegmentator:
         })
         """
         event_tracks: List[Tuple[Event, Dict[str, Any]]] = []
-
         for event in self.annotations.events:
             bounding_boxes = event.bounding_boxes
             min_x1 = min(bounding_boxes, key=lambda x: x.x1).x1
             min_y1 = min(bounding_boxes, key=lambda x: x.y1).y1
             max_x2 = max(bounding_boxes, key=lambda x: x.x2).x2
             max_y2 = max(bounding_boxes, key=lambda x: x.y2).y2
+            min_x1 = max(0, min_x1 - offset)
+            min_y1 = max(0, min_y1 - offset)
+            max_x2 = min(max_x2 + offset, video_size[0] - 1)
+            max_y2 = min(max_y2 + offset, video_size[1] - 1)
             event_tracks.append((
-                event, {"x1": min_x1, "y1": min_y1, "x2": max_x2, "y2": max_y2},
+                event.copy(), {"x1": min_x1, "y1": min_y1, "x2": max_x2, "y2": max_y2},
             ))
+
+        for event, new_coords in event_tracks:
+            new_objects = {}
+            for tracked_object,(start_frame,end_frame) in event.objects.items():
+                new_tracked_object = tracked_object.copy()
+                new_tracked_object.bounding_boxes = [
+                    bb for bb in tracked_object.bounding_boxes if bb.frame >= event.start_frame
+                ]
+                for bbox in new_tracked_object.bounding_boxes:
+                    bbox.x1 = max(0, bbox.x1 - new_coords["x1"])
+                    bbox.y1 = max(0, bbox.y1 - new_coords["y1"])
+                    bbox.x2 = max(0, bbox.x2 - new_coords["x2"])
+                    bbox.y2 = max(0, bbox.y2 - new_coords["y2"])
+                    bbox.x1 = min(video_size[0] - 1, bbox.x1)
+                    bbox.y1 = min(video_size[1] - 1, bbox.y1)
+                    bbox.x2 = min(video_size[0] - 1, bbox.x2)
+                    bbox.y2 = min(video_size[1] - 1, bbox.y2)
+                    bbox.frame -= event.start_frame
+                new_objects[new_tracked_object] = (start_frame - event.start_frame, end_frame - event.start_frame)
+            event.objects = new_objects
+
+
+
         return event_tracks
+
+    def get_empty_events_tracking_segmentation(self, minimum_frames: int, video_size: Tuple[int, int],
+                                               min_zoom_size: Tuple[int, int] = (30, 30)) \
+            -> List[Dict[str, int]]:
+        """
+        Reads the annotations and gives back  alist of video frame ranges without events happening
+        :param minimum_frames: the minimum number of frames required for a video portion to be considered valid.
+        :param video_size: the size of the video in the format (width, height).
+        :param min_zoom_size: the minimum size of the video portion required for a video portion to be considered valid.
+        :return: a list of dicts in the following format:
+            {
+                start_frame: the first frame of the empty event,
+                end_frame: the last frame of the empty event,
+                x1: top-left corner x-coordinate,
+                y1: top-left corner y-coordinate,
+                x2: bottom-right corner x-coordinate,
+                y2: bottom-right corner y-coordinate,
+            }
+        """
+
+        empty_events = []
+        event_frames = [(event.start_frame, event.end_frame) for event in self.annotations.events]
+        event_frames = sorted(event_frames, key=lambda x: x[0])
+        for i in range(len(event_frames) - 1):
+            previous_end_frame = event_frames[i][1] + 1
+            next_start_frame = event_frames[i + 1][0] - 1
+            if next_start_frame - previous_end_frame >= minimum_frames:
+                record = {
+                    "start_frame": event_frames[i][0],
+                    "end_frame": event_frames[i + 1][0],
+                    "x1": random.randint(0, video_size[0] - min_zoom_size[0] - 1),
+                    "y1": random.randint(0, video_size[1] - min_zoom_size[1] - 1),
+                }
+                record.update({
+                    "x2": random.randint(record["x1"] + min_zoom_size[0], video_size[0] - 1),
+                    "y2": random.randint(record["y1"] + min_zoom_size[1], video_size[1] - 1),
+                })
+                empty_events.append(record)
+
+        return empty_events
 
 
 class _VideoCutter:
@@ -151,6 +224,17 @@ class _VideoCutter:
         total_frames = self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT)
         return int(total_frames)
 
+    @property
+    def video_size(self) -> Tuple[int, int]:
+        """
+        Returns the size of the video.
+        :return: A tuple in the following format:
+            (width, height)
+        """
+        width = int(self.video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(self.video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        return width, height
+
     def cut_video(self, output_video_path, start_frame=0, end_frame=None, crop_info: Dict[str, int] = None):
         """
         Crops a spatial portion of a video and saves it as a new video file.
@@ -168,12 +252,11 @@ class _VideoCutter:
                 y2 (int): Y-coordinate of the bottom-right corner of the ROI.
         """
 
-        width = int(self.video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(self.video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        width, height = self.video_size
         if crop_info:
             x1, y1, x2, y2 = crop_info['x1'], crop_info['y1'], crop_info['x2'], crop_info['y2']
         else:
-            x1, y1, x2, y2 = 0, 0, width, height
+            x1, y1, x2, y2 = 0, 0, width - 1, height - 1
         fps = self.video_capture.get(cv2.CAP_PROP_FPS)
         total_frames = int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
         codec = cv2.VideoWriter_fourcc(*'mp4v')
@@ -219,24 +302,36 @@ class VideosDivider:
     """
 
     def __init__(self, videos_folder: str, tracking_folder: str, events_folder: str, tracking_annotations_folder: str,
-                 events_annotations_folder: str, sampling_rate: int = 10, image_extension="jpg", frames_offset=10):
+                 events_annotations_folder: str, images_per_video: int = 10, image_extension="jpg", frames_offset=10,
+                 min_zoom_size=(30, 30), minimum_frames=30, event_window_offset=5, max_event_duration=100):
         """
+        If the folders "tracking_folder", "events folder","tracking_annotations_folder" and "events_annotations_folder"
+        don't exist, they will be created.'
         :param videos_folder: the folder containing the video files to be divided.
         :param tracking_folder: the folder that will contain the images of "Object Tracking" category.
         :param events_folder: the folder that will contain the divided videos kf "Events" category.
         :param tracking_annotations_folder: the folder that will contain the annotation of "Object Tracking" images.
         :param events_annotations_folder: the folder that will contain the annotation of "Events" videos.
-        :param sampling_rate: the sampling rate to extract frames for Object Tracking. Default is 10.
+        :param images_per_video: the maximum number of images to extract from a video. Default is 10.
         :param image_extension: the image extension to extract frames for Object Tracking. Default is "jpg".
         :param frames_offset: the frames to keep before and after an event for video segmentation. Default is 10.
+        :param min_zoom_size: the minimum size of the video patch to extract "Empty" events.
+        :param minimum_frames: the minimum number of frames to extract "Empty" events.
+        :param event_window_offset: the offset to add to each direction for the event window. Default is 5.
+        :param max_event_duration: the maximum duration of the event window in frames. Default is 30.
         """
+        self.max_event_duration = max_event_duration
+        self.min_zoom_size = min_zoom_size
+        self.minimum_frames = minimum_frames
         self.tracking_folder = tracking_folder
         self.events_folder = events_folder
         self.video_paths = self._load_video_names(videos_folder)
-        self.sampling_rate = sampling_rate
+        self.images_per_video = images_per_video
         self.image_extension = image_extension
         self.frames_offset = frames_offset
+        self.event_window_offset = event_window_offset
 
+        # TODO document what happens in constructors ( in all the classes )
         # Create folders if not exist
         os.makedirs(self.events_folder, exist_ok=True)
         os.makedirs(self.tracking_folder, exist_ok=True)
@@ -270,7 +365,9 @@ class VideosDivider:
         video_extension = video_path.split('.')[-1]
         segmentator = _VideoSegmentator(annotations)
         with _VideoCutter(video_path) as video_cutter:
-            frames: Dict[int, Set[TrackedObject]] = segmentator.get_object_tracking_frames(self.sampling_rate)
+
+            sampling_rate = max(1, int(video_cutter.video_length / self.images_per_video))
+            frames: Dict[int, Set[TrackedObject]] = segmentator.get_object_tracking_frames(sampling_rate)
             for frame, tracked_objects in frames.items():
                 track_ids = '_'.join([str(track.track_id) for track in tracked_objects])
                 new_video_name = f'{video_id}.tracking.{track_ids}.{frame}.{self.image_extension}'
@@ -283,14 +380,22 @@ class VideosDivider:
                 )
                 self.tracking_annotations_database.save(video_id, new_annotations_name, new_annotations)
 
-            segmentations: List[Tuple[Event, Dict[str, Any]]] = segmentator.get_events_tracking_segmentation()
-            for event, segmentation_info in segmentations:
+            events_segmentations: List[Tuple[Event, Dict[str, Any]]] = segmentator.get_events_tracking_segmentation(
+                video_cutter.video_size, offset=self.event_window_offset)
+            for event, segmentation_info in events_segmentations:
                 new_video_name = f'{video_id}.event.{event.event_id}.{video_extension}'
                 new_video_path = os.path.join(self.events_folder, new_video_name)
+                event_duration = event.duration + 2 * self.frames_offset
+                start_frame = event.start_frame if event_duration > self.max_event_duration else max(0,
+                                                                                                     event.start_frame - self.frames_offset)
+                end_frame = min(event.end_frame + self.frames_offset,
+                                video_cutter.video_length - 1,
+                                event.start_frame + self.max_event_duration
+                                )
                 video_cutter.cut_video(
                     output_video_path=new_video_path,
-                    start_frame=max(0, event.start_frame - self.frames_offset),
-                    end_frame=min(event.end_frame + self.frames_offset, video_cutter.video_length - 1),
+                    start_frame=start_frame,
+                    end_frame=end_frame,
                     crop_info=segmentation_info,
                 )
                 new_annotations_name = f'event.{event.event_id}'
@@ -299,8 +404,38 @@ class VideosDivider:
                     events=[Event(
                         event_id=event.event_id,
                         event_type=event.event_type,
-                        start_frame=event.start_frame,
-                        end_frame=event.end_frame,
+                        start_frame=0,
+                        end_frame=video_cutter.video_length - 1,
+                        objects=event.objects
+                    )]
+                )
+                self.events_annotations_database.save(
+                    video_id, new_annotations_name, new_annotations
+                )
+
+            empty_events_segmentations: List[Dict[str, int]] = segmentator.get_empty_events_tracking_segmentation(
+                minimum_frames=self.minimum_frames,
+                video_size=video_cutter.video_size,
+                min_zoom_size=self.min_zoom_size
+            )
+
+            for i, record in enumerate(empty_events_segmentations):
+                new_video_name = f'{video_id}.event.none_{i}.{video_extension}'
+                new_video_path = os.path.join(self.events_folder, new_video_name)
+                video_cutter.cut_video(
+                    output_video_path=new_video_path,
+                    start_frame=max(0, record["start_frame"] - self.frames_offset),
+                    end_frame=min(record["end_frame"] + self.frames_offset, video_cutter.video_length - 1),
+                    crop_info=record,
+                )
+                new_annotations_name = f'event.none_{i}'
+                new_annotations = Annotations(
+                    tracked_objects=[],
+                    events=[Event(
+                        event_id=i,
+                        event_type=0,
+                        start_frame=record["start_frame"],
+                        end_frame=record["end_frame"],
                         objects={}
                     )]
                 )
@@ -322,4 +457,3 @@ class VideosDivider:
             if video_id not in self.video_paths:
                 continue
             self._divide_video(video_id, annotations)
-
