@@ -341,6 +341,7 @@ class AnnotationsReader:
     """
     def __init__(self, annotations_dir: str):
         """
+        It loads in memory all the file names of the folder, throwing an error if they're not valid.
         :param annotations_dir: the path to the directory containing the annotations of the
         VIRAT Dataset.
         """
