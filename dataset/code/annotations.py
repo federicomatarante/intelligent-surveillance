@@ -101,7 +101,6 @@ class BoundingBox:
         return BoundingBox.from_json(self.to_json())
 
 
-
 _tracked_object_labels = {
     0: 'Dumpster',
     1: 'Door',
@@ -269,6 +268,7 @@ class TrackedObject:
         """
         return TrackedObject.from_json(self.to_json())
 
+
 _event_types = {
     0: 'None',
     1: 'activity_running',
@@ -378,7 +378,6 @@ class Event:
     event_type: int
     objects: Dict[TrackedObject, Tuple[int, int]]
 
-
     @property
     def tracked_objects(self) -> List[TrackedObject]:
         """
@@ -484,7 +483,7 @@ class Event:
         for track, (start_frame, end_frame) in json['objects']:
             objects.update(
                 {
-                    TrackedObject.from_json(track): (start_frame,end_frame)
+                    TrackedObject.from_json(track): (start_frame, end_frame)
                 }
             )
         return Event(
@@ -586,7 +585,6 @@ class Annotations:
                 Event.from_json(ev_json) for ev_json in json["events"]
             ]
         )
-
 
     def copy(self):
         """
