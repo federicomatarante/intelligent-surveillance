@@ -137,7 +137,7 @@ class _VideoSegmentator:
 
         for event, new_coords in event_tracks:
             new_objects = {}
-            for tracked_object,(start_frame,end_frame) in event.objects.items():
+            for tracked_object, (start_frame, end_frame) in event.objects.items():
                 new_tracked_object = tracked_object.copy()
                 new_tracked_object.bounding_boxes = [
                     bb for bb in tracked_object.bounding_boxes if bb.frame >= event.start_frame
@@ -154,8 +154,6 @@ class _VideoSegmentator:
                     bbox.frame -= event.start_frame
                 new_objects[new_tracked_object] = (start_frame - event.start_frame, end_frame - event.start_frame)
             event.objects = new_objects
-
-
 
         return event_tracks
 
@@ -367,7 +365,11 @@ class VideosDivider:
             sampling_rate = max(1, int(video_cutter.video_length / self.images_per_video))
             frames: Dict[int, Set[TrackedObject]] = segmentator.get_object_tracking_frames(sampling_rate)
             for frame, tracked_objects in frames.items():
-                track_ids = '_'.join([str(track.track_id) for track in tracked_objects])
+                if len(tracked_objects) > 8:
+                    track_ids = '_'.join([str(track.track_id) for track in list(tracked_objects)[:8]])
+                    track_ids += '_more'
+                else:
+                    track_ids = '_'.join([str(track.track_id) for track in tracked_objects])
                 new_video_name = f'{video_id}.tracking.{track_ids}.{frame}.{self.image_extension}'
                 new_file_path = os.path.join(self.tracking_folder, new_video_name)
                 video_cutter.sample_frame(new_file_path, frame)
@@ -441,17 +443,26 @@ class VideosDivider:
                     video_id, new_annotations_name, new_annotations
                 )
 
-    def divide_videos(self, annotations: Dict[str, Annotations]):
+    def divide_videos(self, annotations: Dict[str, Annotations], verbose_level=0):
         """
         Divides all the videos given in input in multiple chunks of videos according to the annotations linked to it and
         multiple images. Also new annotations files are created.
+        :param verbose_level: the verbose level desired. 0 is silent, 1 prints the progress and 2 prints the
+         details of the videos.
         :param annotations: A dictionary where the keys are video file ids and the values are annotations.
         Like: {
             video_id: annotations related to video
         }
 
         """
+        i = 1
+        tot_videos = len(annotations)
         for video_id, annotations in annotations.items():
+            if verbose_level > 0:
+                print(f"Dividing video {i}/{tot_videos}")
+            if verbose_level > 1:
+                print(f"\tVideo id: {video_id}")
+            i += 1
             if video_id not in self.video_paths:
                 continue
             self._divide_video(video_id, annotations)
