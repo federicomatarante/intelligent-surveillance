@@ -1,21 +1,18 @@
 from typing import Dict, List
 
-from dataset.code.database import VideosDatabase, AnnotationsDatabase, ImagesDatabase
+from dataset.code.database import AnnotationsDatabase
 
 
 class DatasetAnalyzer:
 
-    def __init__(self, videos_database: VideosDatabase, videos_annotations_database: AnnotationsDatabase,
-                 images_database: ImagesDatabase, images_annotations_database: AnnotationsDatabase):
+    def __init__(self, videos_annotations_database: AnnotationsDatabase,
+                 images_annotations_database: AnnotationsDatabase):
         """
-        :param videos_database: the database containing all videos for event recognition dataset.
+        When initialized, it loads in memory all the data needed for the analysis from the annotation databases.
         :param videos_annotations_database: the database containing all annotations for event recognition dataset videos.
-        :param images_database: the database containing all images for object tracking dataset.
         :param images_annotations_database: the database containing all annotations for object tracking dataset videos.
         """
         self.videos_annotations_database = videos_annotations_database
-        self.videos_database = videos_database
-        self.images_database = images_database
         self.images_annotations_database = images_annotations_database
         self._load_events_analysis(videos_annotations_database)
         self._load_tracking_analysis(images_annotations_database)
@@ -41,6 +38,7 @@ class DatasetAnalyzer:
         # A dict containing a mapping { event_label: list of IDS of annotations with that event }
         self.tracking_labels_idS: Dict[int, List[int]] = {}
         for annotation_id in images_annotations_database.get_ids():
+
             annotations = images_annotations_database.read(annotation_id)
             tracking_labels = [track.label for track in annotations.tracked_objects]
             for label in tracking_labels:

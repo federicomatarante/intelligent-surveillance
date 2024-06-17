@@ -52,6 +52,7 @@ class AnnotationsDatabase:
         annotation_file = self.annotation_paths[video_id]
         with open(annotation_file, 'rb') as f:
             annotations_data = pickle.load(f)
+
         return Annotations.from_json(annotations_data)
 
     def save(self, video_id: str, annotations_id: str, annotations: Annotations):
@@ -189,4 +190,3 @@ class ImagesDatabase:
         :return: The list of the IDs in the database, meaning the elements possible to retrieve from the database.
         """
         return list(self.image_paths.keys())
-
