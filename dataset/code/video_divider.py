@@ -101,7 +101,7 @@ class _VideoSegmentator:
             frame: frames[frame] for frame in sorted(frames_numbers)[::sampling_rate]
         }
 
-    def get_events_tracking_segmentation(self, video_size: Tuple[int, int], offset: int = 5) -> list[
+    def get_events_tracking_segmentation(self, video_size: Tuple[int, int], offset: int = 5, max_duration: int = None) -> list[
         tuple[Event, dict[str, Any]]]:
         """
         Returns a mapping of each event to the coordinates of the part of the video
@@ -112,6 +112,7 @@ class _VideoSegmentator:
 
         :param offset: the offset of pixels to add in each direction. Default is 5.
         :param video_size: the size of the video in the format (width, height).
+        :param max_duration: the maximum duration of the events in frames.
         :return: a list of tuples where each tuple is of the form
         (event, {
             x1: top-left corner x-coordinate,
@@ -122,7 +123,9 @@ class _VideoSegmentator:
         """
         event_tracks: List[Tuple[Event, Dict[str, Any]]] = []
         for event in self.annotations.events:
-            bounding_boxes = event.bounding_boxes
+            max_frame = event.start_frame if max_duration is None else event.start_frame + max_duration - 1
+            bounding_boxes = [bbox for bbox in event.bounding_boxes if bbox.frame <= max_frame] # TODO test
+
             min_x1 = min(bounding_boxes, key=lambda x: x.x1).x1
             min_y1 = min(bounding_boxes, key=lambda x: x.y1).y1
             max_x2 = max(bounding_boxes, key=lambda x: x.x2).x2
@@ -381,7 +384,7 @@ class VideosDivider:
                 self.tracking_annotations_database.save(video_id, new_annotations_name, new_annotations)
 
             events_segmentations: List[Tuple[Event, Dict[str, Any]]] = segmentator.get_events_tracking_segmentation(
-                video_cutter.video_size, offset=self.event_window_offset)
+                video_cutter.video_size, offset=self.event_window_offset, max_duration=self.max_event_duration)
             for event, segmentation_info in events_segmentations:
                 new_video_name = f'{video_id}.event.{event.event_id}.{video_extension}'
                 new_video_path = os.path.join(self.events_folder, new_video_name)

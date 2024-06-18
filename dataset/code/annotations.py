@@ -101,7 +101,7 @@ class BoundingBox:
         return BoundingBox.from_json(self.to_json())
 
 
-_tracked_object_labels = {
+tracked_object_labels = {
     0: 'Dumpster',
     1: 'Door',
     2: 'Prop',
@@ -168,7 +168,7 @@ class TrackedObject:
         """
         Converts the label integer to a label literal.
         """
-        return _tracked_object_labels[label]
+        return tracked_object_labels[label]
 
     @staticmethod
     def get_label_number(level: str) -> int:
@@ -176,7 +176,7 @@ class TrackedObject:
         :param level: the literal label.
         :return: the corresponding literal number.
         """
-        for key, label in _tracked_object_labels.items():
+        for key, label in tracked_object_labels.items():
             if label == level:
                 return key
         raise ValueError(f'Label {level} is not valid')
@@ -269,7 +269,7 @@ class TrackedObject:
         return TrackedObject.from_json(self.to_json())
 
 
-_event_types = {
+event_types = {
     0: 'None',
     1: 'activity_running',
     2: 'specialized_miscellaneous',
@@ -392,7 +392,7 @@ class Event:
         :param label: the label to convert.
         :return: the converted label.
         """
-        for number, event_type in _event_types.items():
+        for number, event_type in event_types.items():
             if label == event_type:
                 return number
         raise ValueError(f"{label} is not a valid label.")
@@ -404,14 +404,14 @@ class Event:
         :param event_type: the label to convert.
         :return: the converted label.
         """
-        return _event_types[event_type]
+        return event_types[event_type]
 
     @property
     def label_name(self):
         """
         The name of the label.
         """
-        return _event_types[self.event_type]
+        return event_types[self.event_type]
 
     @property
     def duration(self) -> int:

@@ -1,12 +1,14 @@
+import msvcrt
 import os
 
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import ToTensor
 
+from dataset.code.annotations import tracked_object_labels, Event
 from dataset.code.database import AnnotationsDatabase, VideosDatabase, ImagesDatabase
 
-
+# TODO videos are in RGB. Convert in BGR and edit documentation
 class ActionRecognitionDataset(Dataset):
 
     def __init__(self, videos_dir: str, annotations_dir: str, transform=None):
@@ -24,19 +26,28 @@ class ActionRecognitionDataset(Dataset):
     def __getitem__(self, idx):
         """
         :param idx: index of the video to retrieve.
-        :return: a tuple (video, label) in which
-            - video is a torch tensor of shape (frames,channels,height,width)
+        :return: a tuple (video, objects, label) in which
+            - video is a torch tensor of shape (frames,channels RGB,height,width)
+            - objects is a torch tensor of shape (objects)
+                where 'objects' is the number of total objects and contains the count of
+                  each object in each posizion.
             - label is a torch tensor of shape (1), which is the label of the video.
         """
         video_id = self.video_ids[idx]
         frames = self.videos_database.read(video_id)
+        frames = [self._to_tensor(frame) for frame in frames]
+        frames = torch.stack(frames)
         annotations = self.annotations_database.read(video_id)
         if self._transform:
             frames = [self._transform(frame) for frame in frames]
 
-        frames = [self._to_tensor(frame) for frame in frames]
         label = annotations.events[0].event_type
-        return frames, torch.tensor(label)
+
+        tracked_objects = annotations.events[0].tracked_objects
+        objects_involved = torch.zeros(len(tracked_object_labels))
+        for tracked_object in tracked_objects:
+            objects_involved[tracked_object.label] += 1
+        return frames, objects_involved, torch.tensor(label)
 
 
 class ObjectTrackingDataset(Dataset):
@@ -54,7 +65,7 @@ class ObjectTrackingDataset(Dataset):
         """
         :param idx: index of the video to retrieve.
         :return: a tuple (image, track) in which
-            - image is a torch tensor of shape (channels,height,width)
+            - image is a torch tensor of shape (channels in RGB,height,width)
             - track is a torch tensor of shape (num_objects,5)
                 where the last dimension corresponds to (x1,y1,x2,y2,label) of the bounding box.
         """
@@ -69,3 +80,44 @@ class ObjectTrackingDataset(Dataset):
                 torch.tensor([bbox.x1, bbox.y1, bbox.x2, bbox.y2, track.label])
             )
         return self._to_tensor(image), torch.tensor(annotation_info)
+
+
+def test_action_recognition_dataset():
+    dataset = ActionRecognitionDataset(
+        videos_dir=r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\tests\event_videos",
+        annotations_dir=r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\tests\event_annotations"
+    )
+    print("Dataset size: ", len(dataset))
+
+    for i in range(len(dataset)):
+        print("Retreiving video with index: ", i)
+        frames, objects, label = dataset[i]
+        print("Frames: ", frames.shape)
+        print("Objects: ", objects)
+        print("Label: ", label, " Named: ", Event.get_label_name(label.item()))
+        print("Press any key to continue...")
+        input()
+
+
+def test_action_recognition_data_loader():
+    dataset = ActionRecognitionDataset(
+        videos_dir=r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\tests\event_videos",
+        annotations_dir=r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\tests\event_annotations"
+    )
+
+    print("AA")
+
+    dataloader = DataLoader(
+        dataset=dataset,
+        shuffle=True,
+        batch_size=1,
+        num_workers=5,
+    )
+
+    print("BB")
+
+    for batch in dataloader:
+        pass
+
+if __name__ == "__main__":
+    test_action_recognition_data_loader()

@@ -13,17 +13,17 @@ from dataset.code.video_divider import VideosDivider
 #   3) track video ID to each track in YOLO
 
 # The folder with all the VIRAT videos.
-RAW_VIDEOS_DATABASE = r""
+RAW_VIDEOS_DATABASE = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\videos"
 # The folder with the associated annotations to the videos.
-RAW_ANNOTATIONS_DATABASE = r""
+RAW_ANNOTATIONS_DATABASE = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\kml_annotations\all"
 # The folder that will contain all the events from the VIRAT videos.
-PROCESSED_EVENT_VIDEOS_DATABASE = r""
+PROCESSED_EVENT_VIDEOS_DATABASE = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\events"
 # The folder that will contain all the annotations related to the events.
-PROCESSED_EVENT_ANNOTATIONS_DATABASE = r""
+PROCESSED_EVENT_ANNOTATIONS_DATABASE = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\events_annotations"
 # The folder that will contain all the images containing the object tracking from the VIRAT videos.
-PROCESSED_TRACKING_IMAGES_DATABASE = r""
+PROCESSED_TRACKING_IMAGES_DATABASE = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\tracking"
 # The folder that will contain all the annotations related to the object tracking.
-PROCESSED_TRACKING_ANNOTATIONS_DATABASE = r""
+PROCESSED_TRACKING_ANNOTATIONS_DATABASE = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\tracking_annotations"
 
 # The maximum number of images to extract from a video for object tracking.
 IMAGES_PER_VIDEO = 10

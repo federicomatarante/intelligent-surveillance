@@ -331,7 +331,6 @@ class _AnnotationsAssembler:
 
 
 class AnnotationsReader:
-
     """
     A class to read the annotations of the VIRAT dataset.
     Usage example:
@@ -339,6 +338,7 @@ class AnnotationsReader:
     reader = AnnotationsReader(annotations_directory)
     annotations = reader.read()
     """
+
     def __init__(self, annotations_dir: str):
         """
         It loads in memory all the file names of the folder, throwing an error if they're not valid.
@@ -418,14 +418,21 @@ class AnnotationsReader:
         )
         return assembler.assemble()
 
-    def read(self) -> Dict[str, Annotations]:
+    def read(self, verbose_level: int = 0) -> Dict[str, Annotations]:
         """
         Reads the files in the directory and returns the read annotations.
+        :param verbose_level: the level of verbosity. 0 is silent, 1 is verbose, 2 is very verbose.
         :return: a dictionary with the following format:
          { [Video ID]: [Video Anotation] }
         """
         assembled_annotations = {}
+        i = 0
         for video_id, annotations in self.annotation_files.items():
+            i += 1
+            if verbose_level > 0:
+                print(f"Reading annotation {i}/{len(annotations)}")
+                if verbose_level > 1:
+                    print("\tVideo id: ", video_id)
             if 'geom' not in annotations or 'activities' not in annotations or 'types' not in annotations:
                 raise ValueError(
                     f"Insufficient annotations for video {video_id}. \nIt should have the following annotation files:\

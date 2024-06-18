@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 
 from dataset.code.annotations import TrackedObject, Event
+from dataset.code.database import VideosDatabase
 
 
 def _draw_text_with_newlines(frame, text, x, y, color, font_face, font_scale, thickness):
@@ -142,6 +143,9 @@ def show_tracked_image(image: np.ndarray, events: List[Event] = None, tracked_ob
     :param events: the list of events to be displayed as bounding boxes.
     :param tracked_objects: the list of objects to be displayed as bounding boxes.
     """
+
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
     bboxes_data, colors = {}, {}
 
     if events:
@@ -172,7 +176,7 @@ def show_tracked_video(video_frames: np.ndarray, events: List[Event] = None,
     """
     Given a video, it shows all the tracked objects in it as bounding boxes.
     Press q to close a running video.
-    :param video_frames: the video to be displayed.
+    :param video_frames: the video to be displayed ( In RGB format ).
     :param events: the list of events to be displayed as bounding boxes.
     :param tracked_objects: the list of objects to be displayed as bounding boxes.
     """
@@ -190,6 +194,7 @@ def show_tracked_video(video_frames: np.ndarray, events: List[Event] = None,
     frame_idx = 0
     while frame_idx < total_frames:
         frame = video_frames[frame_idx]
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
         if frame_idx in bboxes_data:
             for bbox in bboxes_data[frame_idx]:
@@ -211,3 +216,4 @@ def show_tracked_video(video_frames: np.ndarray, events: List[Event] = None,
         frame_idx += 1
 
     cv2.destroyAllWindows()
+
