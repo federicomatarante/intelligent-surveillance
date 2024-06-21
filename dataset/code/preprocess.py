@@ -1,39 +1,39 @@
-import torchvision.transforms as transforms
-from torchvision.transforms import functional as TF
-import torch.nn.functional as F
-import torch.nn as nn
-import torch
+from typing import List
 
-from bbox_viewer import show_tracked_video
-from database import VideosDatabase
-import numpy as np
 import cv2
+import numpy as np
+import torch
+import torchvision.transforms as transforms
 from PIL import Image, ImageOps
 
-#VIDEOS PREPROCESSING:
+
+# VIDEOS PREPROCESSING:
 # 1) YOLOv8 automatically performs several preprocessing steps, including conversion to RGB,
 # scaling pixel values to the range [0, 1], and normalization using predefined mean and standard deviation values.
 # 2)
 
-""""class GaussianBlur:
-        def __init__(self, kernel_size=5, sigma=1.0):
-            self.kernel_size = kernel_size
-            self.sigma = sigma
-    
-        def __call__(self, frame):
-            return self.apply_gaussian_blur(frame)
-    
-        def apply_gaussian_blur(self, frame):
-            # Convert PIL Image to NumPy array
-            frame_np = np.array(frame)
-            # Apply Gaussian blur
-            frame_np = cv2.GaussianBlur(frame_np, (self.kernel_size, self.kernel_size), self.sigma)
-            # Convert NumPy array back to PIL Image
-            return Image.fromarray(frame_np)"""""
-
 
 class BilateralFilter:
+    """
+    A class for performing bilateral filtering of an image.
+    """
+
     def __init__(self, d=9, sigma_color=75, sigma_space=75):
+        """
+
+        :param d: the radius of the bilateral filter.
+        :param sigma_color: This parameter controls the filter's behavior in the color domain. It defines how much
+            influence the difference in color or intensity between pixels has on the filtering process.
+            - A larger sigmaColor value means that pixels with more different colors/intensities will be mixed together,
+            resulting in more smoothing and noise reduction.
+            - A smaller sigmaColor value means only very similar colors will be mixed, preserving more color edges.
+            Typical values are between 75 and 100.
+        :param sigma_space: This parameter controls the filter's behavior in the spatial domain. It
+            determines how much influence the distance between pixels has on the filtering process.
+            - A larger sigmaSpace value means that pixels farther apart will influence each other, resulting in larger areas being smoothed.
+            - A smaller sigmaSpace value restricts the effect to closer pixels, leading to more localized smoothing.
+            Typical values are between 75 and 100.
+        """
         self.d = d
         self.sigma_color = sigma_color
         self.sigma_space = sigma_space
@@ -52,28 +52,67 @@ class BilateralFilter:
         frame_tensor = torch.from_numpy(frame_filtered).permute(2, 0, 1).float() / 255.0
 
         return frame_tensor
-class Sample_frames_from_list:
+
+
+class FramesSampler:
+    """
+    A class to reduce the frame rate of a video.
+    """
+
     def __init__(self, sample_interval):
+        """
+        :param sample_interval: the sample interval of the frames, so how many frames to skip for sampling.
+        """
         self.sample_interval = sample_interval
 
-    def __call__(self, frame):
+    def __call__(self, frames):
         return self.sampled_frames(frames)
 
     def sampled_frames(self, frames):
         sampled_frames = frames[::self.sample_interval]
         return sampled_frames
 
-def aspect_preserving_resize(img):
-    w, h = img.size
-    if w > h:
-        new_w, new_h = 100, int(100 * h / w)
-    else:
-        new_w, new_h = int(100 * w / h), 100
-    return img.resize((new_w, new_h), Image.LANCZOS)
+
+class RatioPreservingResizer:
+    """
+    Resizes an image keeping the ratio between the width and height.
+    For example if (H,W)=(200,400) and the max_value is 100, the resized image will be of size (50,100).
+    """
+
+    def __init__(self, max_size: int):
+        """
+        :param max_size: the minimum value to keep the aspect ratio between height and width.
+        """
+        self.max_size = max_size
+
+    def __call__(self, frame):
+        return self.aspect_preserving_resize(frame)
+
+    def aspect_preserving_resize(self, img):
+        """
+        :param img: the image to be resized.
+        :return: the resized image.
+        """
+        w, h = img.size
+        if w > h:
+            new_w, new_h = self.max_size, int(self.max_size * h / w)
+        else:
+            new_w, new_h = int(self.max_size * w / h), self.max_size
+        return img.resize((new_w, new_h), Image.LANCZOS)
 
 
-class Pad:
+class Padder:
+    """
+    A class to pad an image.
+    """
+
     def __init__(self, target_height, target_width, padding_value=0):
+        """
+
+        :param target_height: the max height of an image should have after the padding.
+        :param target_width: the max width of an image should have after the padding.
+        :param padding_value: the value to be used for the padding pixels.
+        """
         self.target_height = target_height
         self.target_width = target_width
         self.padding_value = padding_value
@@ -86,15 +125,35 @@ class Pad:
         new_frame = ImageOps.expand(frame, padding, fill=self.padding_value)
         return new_frame
 
-def preprocess_frames(frames, d, sigma_color, sigma_space,sample_interval, target_height, target_width):
-    sampled_frames= Sample_frames_from_list(sample_interval=sample_interval).sampled_frames(frames)
+
+def preprocess_frames(frames: List[np.ndarray], d: int, sigma_color: int, sigma_space: int, sample_interval: int,
+                      target_height: int, target_width: int, max_size: int):
+    """
+    Preprocesses a list of frames to make them suitable for training.
+    The filters it applies are:
+     - Frame sampling: it decreases the frame rate of the video.
+     - Downsample: it downsamples the frames preserving their aspect ratio.
+     - Bilateral filtering: it applies bilateral filtering on the frames making them more smooth and preserving edges.
+     - Pad: it pads the frames according to the given parameters.
+    :param frames: the list of frames to be preprocessed.
+    :param d: the radius of the bilateral filter.
+    :param sigma_color: This parameter controls the Bilateral filter's behavior in the color domain.
+        See 'BilateralFilter' for more details.
+    :param sigma_space: This parameter controls the Bilateral filter's behavior in the spatial domain.
+        See 'BilateralFilter' for more details.
+    :param sample_interval: the sample interval of the frames, so how many frames to skip for sampling.
+    :param target_height: the max height of an image should have after the padding.
+    :param target_width: the max width of an image should have after the padding.
+    :param max_size = The maximum size ( between height and width ) of the image after downsampling.
+    :return: the preprocessed list of frames.
+    """
+    sampled_frames = FramesSampler(sample_interval=sample_interval).sampled_frames(frames)
     preprocessed_frames = []
     transform = transforms.Compose([
         transforms.ToPILImage(),
-        #we need to transform the image into a PIL image, in order to apply some transformations such as resizing
-        transforms.Lambda(aspect_preserving_resize),
-        Pad(target_height=target_height,target_width=target_width),  # Apply padding to match target size
+        RatioPreservingResizer(max_size=max_size),
         BilateralFilter(d=d, sigma_color=sigma_color, sigma_space=sigma_space),
+        Padder(target_height=target_height, target_width=target_width),
     ])
 
     for frame in sampled_frames:
@@ -102,36 +161,3 @@ def preprocess_frames(frames, d, sigma_color, sigma_space,sample_interval, targe
         preprocessed_frames.append(preprocessed_frame)
 
     return preprocessed_frames
-
-
-videos_db = VideosDatabase("/Users/serenatrovalusci/Documents/UNI/video_folder")
-video_ids = videos_db.get_ids()
-
-for video_id in video_ids:
-    frames = videos_db.read(video_id)
-    preprocessed_frames = preprocess_frames(frames, 9, 75, 75, 2, 200, 200)
-    # Convert preprocessed frames to NumPy arrays
-
-    preprocessed_frames_np = []
-    for preprocessed_frame in preprocessed_frames:
-        preprocessed_f = preprocessed_frame.permute(1, 2, 0).numpy()
-        preprocessed_f = np.clip(preprocessed_f * 255, 0, 255).astype(np.uint8)
-        preprocessed_frames_np.append(preprocessed_f)
-
-
-""" print(preprocessed_frames)
-# Save the preprocessed video
-new_video_id = f"{video_id}_preprocessed"
-videos_db.save(preprocessed_frames_np, new_video_id, fps=30, size=(640, 640), extension='mp4')"""
-
-
-"""  # Display the preprocessed video
-for frame in preprocessed_frames_np:
-    cv2.imshow(f"Video {video_id}", frame)
-    if cv2.waitKey(25) & 0xFF == ord('q'):
-        break
-        
-    cv2.destroyAllWindows()"""
-
-show_tracked_video(preprocessed_frames_np)
-
