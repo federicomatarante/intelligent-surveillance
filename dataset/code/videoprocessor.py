@@ -49,7 +49,7 @@ class VideoProcessor:
             frames = self.source_db.read(video_id)
             preprocessed_frames = self._preprocess_frames(frames)
             preprocessed_frames_np = self._convert_to_numpy(preprocessed_frames)
-            self.source_db.save(preprocessed_frames_np, video_id, int(self.fps / self.sample_interval),
+            self.target_db.save(preprocessed_frames_np, video_id, int(self.fps / self.sample_interval),
                                 (self.target_height, self.target_width), self.extension)
 
     def _preprocess_frames(self, frames):
@@ -68,8 +68,6 @@ class VideoProcessor:
         """
         preprocessed_frames_np = []
         for preprocessed_frame in preprocessed_frames:
-            preprocessed_f = preprocessed_frame.permute(1, 2, 0).numpy()
-            preprocessed_f = np.clip(preprocessed_f * 255, 0, 255).astype(np.uint8)
-            preprocessed_frames_np.append(preprocessed_f)
+            preprocessed_frames_np.append(np.array(preprocessed_frame))
         return preprocessed_frames_np
 

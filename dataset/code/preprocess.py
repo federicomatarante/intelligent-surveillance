@@ -2,15 +2,8 @@ from typing import List
 
 import cv2
 import numpy as np
-import torch
 import torchvision.transforms as transforms
 from PIL import Image, ImageOps
-
-
-# VIDEOS PREPROCESSING:
-# 1) YOLOv8 automatically performs several preprocessing steps, including conversion to RGB,
-# scaling pixel values to the range [0, 1], and normalization using predefined mean and standard deviation values.
-# 2)
 
 
 class BilateralFilter:
@@ -42,16 +35,10 @@ class BilateralFilter:
         return self.apply_bilateral_filter(frame)
 
     def apply_bilateral_filter(self, frame):
-        # Convert PIL Image to NumPy array
         frame_np = np.array(frame)
-
-        # Apply bilateral filter
         frame_filtered = cv2.bilateralFilter(frame_np, self.d, self.sigma_color, self.sigma_space)
-
-        # Convert NumPy array to PyTorch tensor
-        frame_tensor = torch.from_numpy(frame_filtered).permute(2, 0, 1).float() / 255.0
-
-        return frame_tensor
+        frame_filtered = Image.fromarray(frame_filtered)
+        return frame_filtered
 
 
 class FramesSampler:
@@ -144,7 +131,7 @@ def preprocess_frames(frames: List[np.ndarray], d: int, sigma_color: int, sigma_
     :param sample_interval: the sample interval of the frames, so how many frames to skip for sampling.
     :param target_height: the max height of an image should have after the padding.
     :param target_width: the max width of an image should have after the padding.
-    :param max_size = The maximum size ( between height and width ) of the image after downsampling.
+    :param max_size: The maximum size ( between height and width ) of the image after downsampling.
     :return: the preprocessed list of frames.
     """
     sampled_frames = FramesSampler(sample_interval=sample_interval).sampled_frames(frames)
