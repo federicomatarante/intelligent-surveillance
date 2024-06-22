@@ -119,10 +119,11 @@ class VideosDatabase:
         :param size: The resolution of the video (default: (480, 640)).
         :param extension: The file extension of the video (default: 'mp4').
         """
-        video_path = os.path.join(self.database_path, fr"{video_id}.{size}.{extension}")
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        video_path = os.path.join(self.database_path, fr"{video_id}.{extension}")
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         out = cv2.VideoWriter(video_path, fourcc, fps, size)
-        out.write(video)
+        for frame in video:
+            out.write(frame)
         self.video_paths[video_id] = video_path
 
     def delete(self, video_id: str):
