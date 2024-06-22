@@ -6,6 +6,7 @@ from dataset.code.annotations_parser import AnnotationsReader
 from dataset.code.database import VideosDatabase, ImagesDatabase, AnnotationsDatabase
 from dataset.code.dataset_analyzer import DatasetAnalyzer
 from dataset.code.video_divider import VideosDivider
+from dataset.code.videoprocessor import VideoProcessor
 
 # TODO ideas:
 #   1) Do preprocessing of single videos
@@ -17,7 +18,9 @@ RAW_VIDEOS_DATABASE = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\
 # The folder with the associated annotations to the videos.
 RAW_ANNOTATIONS_DATABASE = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\kml_annotations\all"
 # The folder that will contain all the events from the VIRAT videos.
-PROCESSED_EVENT_VIDEOS_DATABASE = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\events"
+EVENT_VIDEOS_DATABASE = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\events"
+# The folder that will contain all the processed videos of events from the VIRAT videos.
+PROCESSED_EVENT_VIDEOS_DATABASE = r""r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\processed_events"
 # The folder that will contain all the annotations related to the events.
 PROCESSED_EVENT_ANNOTATIONS_DATABASE = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\events_annotations"
 # The folder that will contain all the images containing the object tracking from the VIRAT videos.
@@ -50,7 +53,7 @@ def first_step_processing():
     annotations_reader = AnnotationsReader(RAW_ANNOTATIONS_DATABASE)
     videos_divider = VideosDivider(
         videos_folder=RAW_VIDEOS_DATABASE,
-        events_folder=PROCESSED_EVENT_VIDEOS_DATABASE,
+        events_folder=EVENT_VIDEOS_DATABASE,
         events_annotations_folder=PROCESSED_EVENT_ANNOTATIONS_DATABASE,
         tracking_folder=PROCESSED_TRACKING_IMAGES_DATABASE,
         tracking_annotations_folder=PROCESSED_TRACKING_ANNOTATIONS_DATABASE,
@@ -75,9 +78,23 @@ def second_step_processing():
     In this step each video and image from the "event" and "tracking" folders are processed to improve
     the quality of the dataset.
     """
-    event_videos_database = VideosDatabase(PROCESSED_EVENT_VIDEOS_DATABASE)
+    event_videos_database = VideosDatabase(EVENT_VIDEOS_DATABASE)
+    processed_events_videos_database = VideosDatabase(PROCESSED_EVENT_VIDEOS_DATABASE)
     images_tracking_database = ImagesDatabase(PROCESSED_TRACKING_IMAGES_DATABASE)
-    # TODO processing of videos and images
+    print("Processing the videos... ")
+    # TODO maybe add verbose to processor
+    """
+        def __init__(self, source_database: VideosDatabase, target_database: VideosDatabase, d=9, sigma_color=75, sigma_space=75,
+                 sample_interval=2, target_height=100, target_width=100, max_size=100, extension='mp4', fps=30):
+    """
+    processor = VideoProcessor(
+        source_database=event_videos_database,
+        target_database=processed_events_videos_database,
+        d=9,  # Size of the Bilateral filter
+        sigma_color=75, sigma_space=75,  # Parameters of the Bilateral filter
+
+    )
+    processor.process_videos()
 
 
 def third_step_processing():
@@ -127,7 +144,7 @@ def main():
         print(usage)
         return 1
 
-    if RAW_VIDEOS_DATABASE == "" or RAW_ANNOTATIONS_DATABASE == "" or PROCESSED_EVENT_VIDEOS_DATABASE == "" or PROCESSED_TRACKING_ANNOTATIONS_DATABASE == "":
+    if RAW_VIDEOS_DATABASE == "" or RAW_ANNOTATIONS_DATABASE == "" or EVENT_VIDEOS_DATABASE == "" or PROCESSED_TRACKING_ANNOTATIONS_DATABASE == "":
         print("Set the hyperparameters at the top of this file before running the script!")
         return 1
 
