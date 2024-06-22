@@ -165,20 +165,20 @@ def show_tracked_image(image: np.ndarray, events: List[Event] = None, tracked_ob
             cv2.rectangle(image, (x1, y1), (x2, y2), color, 2)
             _draw_text_with_newlines(image, "Labels: " + box["label"], x1, y1, color, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)
             cv2.putText(image, "IDs: " + str(box["id"]), (x1, y2 + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-
     cv2.imshow('Image', image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
 
 def show_tracked_video(video_frames: np.ndarray, events: List[Event] = None,
-                       tracked_objects: List[TrackedObject] = None):
+                       tracked_objects: List[TrackedObject] = None, fps=30):
     """
     Given a video, it shows all the tracked objects in it as bounding boxes.
     Press q to close a running video.
     :param video_frames: the video to be displayed ( In RGB format ).
     :param events: the list of events to be displayed as bounding boxes.
     :param tracked_objects: the list of objects to be displayed as bounding boxes.
+    :param fps: the FPS of the video to be displayed.
     """
     bboxes_data, colors = {}, {}
     if events:
@@ -209,7 +209,7 @@ def show_tracked_video(video_frames: np.ndarray, events: List[Event] = None,
         text = f"Frame: {frame_idx}/{total_frames}"
         cv2.putText(frame, text, (10, 30), font, 1, 255, 2, cv2.LINE_AA)
         cv2.imshow('Video', frame)
-        key = cv2.waitKey(30)
+        key = cv2.waitKey(fps)
         if key == ord('q'):
             break
 
