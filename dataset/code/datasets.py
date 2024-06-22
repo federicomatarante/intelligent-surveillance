@@ -5,10 +5,10 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision.transforms import ToTensor
 
-from dataset.code.annotations import tracked_object_labels, Event
+from dataset.code.annotations import tracked_object_labels, Event, event_types
 from dataset.code.database import AnnotationsDatabase, VideosDatabase, ImagesDatabase
 
-# TODO videos are in RGB. Convert in BGR and edit documentation
+
 class ActionRecognitionDataset(Dataset):
 
     def __init__(self, videos_dir: str, annotations_dir: str, transform=None):
@@ -31,23 +31,30 @@ class ActionRecognitionDataset(Dataset):
             - objects is a torch tensor of shape (objects)
                 where 'objects' is the number of total objects and contains the count of
                   each object in each posizion.
-            - label is a torch tensor of shape (1), which is the label of the video.
+            - label is a torch tensor of shape (N), where each index is one label of the video.
         """
         video_id = self.video_ids[idx]
+        # Preparing frames
         frames = self.videos_database.read(video_id)
         frames = [self._to_tensor(frame) for frame in frames]
-        frames = torch.stack(frames)
-        annotations = self.annotations_database.read(video_id)
+
         if self._transform:
             frames = [self._transform(frame) for frame in frames]
+        frames = torch.stack(frames)
 
-        label = annotations.events[0].event_type
+        annotations = self.annotations_database.read(video_id)
 
+        # Preparing loading object
         tracked_objects = annotations.events[0].tracked_objects
         objects_involved = torch.zeros(len(tracked_object_labels))
         for tracked_object in tracked_objects:
             objects_involved[tracked_object.label] += 1
-        return frames, objects_involved, torch.tensor(label)
+
+        # Preparing labels
+        label = annotations.events[0].event_type
+        labels = torch.zeros(len(event_types))
+        labels[label] = 1
+        return frames, objects_involved, labels
 
 
 class ObjectTrackingDataset(Dataset):
@@ -82,42 +89,31 @@ class ObjectTrackingDataset(Dataset):
         return self._to_tensor(image), torch.tensor(annotation_info)
 
 
-def test_action_recognition_dataset():
-    dataset = ActionRecognitionDataset(
-        videos_dir=r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\tests\event_videos",
-        annotations_dir=r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\tests\event_annotations"
-    )
-    print("Dataset size: ", len(dataset))
 
-    for i in range(len(dataset)):
-        print("Retreiving video with index: ", i)
-        frames, objects, label = dataset[i]
-        print("Frames: ", frames.shape)
-        print("Objects: ", objects)
-        print("Label: ", label, " Named: ", Event.get_label_name(label.item()))
-        print("Press any key to continue...")
-        input()
+def allign_frames(batch):
+    # TODO this should normalize vidoes with different frames, check for bugs
+    videos = []
+    objects = []
+    labels = []
 
+    # Find the maximum sequence length in the batch
+    max_len = max(video.size(0) for video, _, _ in batch)
 
-def test_action_recognition_data_loader():
-    dataset = ActionRecognitionDataset(
-        videos_dir=r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\tests\event_videos",
-        annotations_dir=r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\tests\event_annotations"
-    )
+    # Pad or truncate the videos to the maximum length
+    for video, obj, label in batch:
+        if video.size(0) < max_len:
+            padding = torch.zeros(max_len - video.size(0), *video.size()[1:])
+            padded_video = torch.cat([video, padding], dim=0)
+        elif video.size(0) > max_len:
+            padded_video = video[:max_len]
+        else:
+            padded_video = video
 
-    print("AA")
-
-    dataloader = DataLoader(
-        dataset=dataset,
-        shuffle=True,
-        batch_size=1,
-        num_workers=5,
-    )
-
-    print("BB")
-
-    for batch in dataloader:
-        pass
-
-if __name__ == "__main__":
-    test_action_recognition_data_loader()
+        videos.append(padded_video)
+        objects.append(obj)
+        labels.append(label)
+    # Stack the padded videos, objects, and labels into tensors
+    videos = torch.stack(videos)
+    objects = torch.stack(objects)
+    labels = torch.stack(labels)
+    return videos, objects, labels
