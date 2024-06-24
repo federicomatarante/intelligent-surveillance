@@ -80,13 +80,9 @@ def second_step_processing():
     """
     event_videos_database = VideosDatabase(EVENT_VIDEOS_DATABASE)
     processed_events_videos_database = VideosDatabase(PROCESSED_EVENT_VIDEOS_DATABASE)
-    images_tracking_database = ImagesDatabase(PROCESSED_TRACKING_IMAGES_DATABASE)
+    images_tracking_database = ImagesDatabase(PROCESSED_TRACKING_IMAGES_DATABASE)  # TODO preprocess also these?
     print("Processing the videos... ")
     # TODO maybe add verbose to processor
-    """
-        def __init__(self, source_database: VideosDatabase, target_database: VideosDatabase, d=9, sigma_color=75, sigma_space=75,
-                 sample_interval=2, target_height=100, target_width=100, max_size=100, extension='mp4', fps=30):
-    """
     processor = VideoProcessor(
         source_database=event_videos_database,
         target_database=processed_events_videos_database,
@@ -112,21 +108,23 @@ def third_step_processing():
     print("\tTotal events: ", dataset_analyzer.events_count)
     print("\tTotal unique labels: ", len(dataset_analyzer.get_event_labels_distribution()))
 
+    event_distribution = dataset_analyzer.get_event_labels_distribution().items()
     print("\tDistribution of label of events: ")
-    for i, (label, value) in enumerate(dataset_analyzer.get_event_labels_distribution().items()):
+    for i, (label, value) in enumerate(event_distribution):
         label_name = Event.get_label_name(label)
         percentage_value = (value * 100) / dataset_analyzer.events_count
-        print(f"\t\t{i} - {label_name}: {value} ({percentage_value:.3f} %)")
+        print(f"\t\t{i} - {label_name} ( ID {label} ) : {value} ({percentage_value:.3f} %)")
 
     print("\n----------------------\n")
     print("Analyzing tracking...")
     print("\tTotal tracking labels: ", dataset_analyzer.tracked_objects_count)
     print("\tTotal unique labels: ", len(dataset_analyzer.get_tracking_labels_distribution()))
     print("\tDistribution of label of object tracking: ")
-    for i, (label, value) in enumerate(dataset_analyzer.get_tracking_labels_distribution().items()):
+    tracking_distribution = dataset_analyzer.get_tracking_labels_distribution().items()
+    for i, (label, value) in enumerate(tracking_distribution):
         label_name = TrackedObject.get_label_literal(label)
         percentage_value = (value * 100) / dataset_analyzer.tracked_objects_count
-        print(f"\t\t{i} - {label_name}: {value} ({percentage_value:.3f} %)")
+        print(f"\t\t{i} - {label_name} ( ID {label} ) : {value} ({percentage_value:.3f} %)")
 
 
 def main():
