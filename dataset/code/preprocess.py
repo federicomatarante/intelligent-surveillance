@@ -1,5 +1,6 @@
 from typing import List
 
+import PIL
 import cv2
 import numpy as np
 import torchvision.transforms as transforms
@@ -113,8 +114,38 @@ class Padder:
         return new_frame
 
 
-def preprocess_frames(frames: List[np.ndarray], d: int, sigma_color: int, sigma_space: int, sample_interval: int,
-                      target_height: int, target_width: int, max_size: int):
+def preprocess_frame(frame: np.ndarray, d: int = 9, sigma_color: int = 75, sigma_space: int = 75,
+                     target_height: int = 100, target_width: int = 100, max_size: int = 100) -> PIL.Image:
+    """
+    Preprocesses a list of frames to make them suitable for training.
+    The filters it applies are:
+     - Frame sampling: it decreases the frame rate of the video.
+     - Downsample: it downsamples the frames preserving their aspect ratio.
+     - Bilateral filtering: it applies bilateral filtering on the frames making them more smooth and preserving edges.
+     - Pad: it pads the frames according to the given parameters.
+    :param frame: the frame to be preprocessed.
+    :param d: the radius of the bilateral filter.
+    :param sigma_color: This parameter controls the Bilateral filter's behavior in the color domain.
+        See 'BilateralFilter' for more details.
+    :param sigma_space: This parameter controls the Bilateral filter's behavior in the spatial domain.
+        See 'BilateralFilter' for more details.
+    :param target_height: the max height of an image should have after the padding.
+    :param target_width: the max width of an image should have after the padding.
+    :param max_size: The maximum size ( between height and width ) of the image after downsampling.
+    :return: the preprocessed list of frames.
+    """
+    transform = transforms.Compose([
+        transforms.ToPILImage(),
+        RatioPreservingResizer(max_size=max_size),
+        BilateralFilter(d=d, sigma_color=sigma_color, sigma_space=sigma_space),
+        Padder(target_height=target_height, target_width=target_width),
+    ])
+    return transform(frame)
+
+
+def preprocess_frames(frames: List[np.ndarray], d: int = 9, sigma_color: int = 75, sigma_space: int = 75,
+                      sample_interval: int = 2,
+                      target_height: int = 100, target_width: int = 100, max_size: int = 100) -> List[PIL.Image]:
     """
     Preprocesses a list of frames to make them suitable for training.
     The filters it applies are:
@@ -136,15 +167,16 @@ def preprocess_frames(frames: List[np.ndarray], d: int, sigma_color: int, sigma_
     """
     sampled_frames = FramesSampler(sample_interval=sample_interval).sampled_frames(frames)
     preprocessed_frames = []
-    transform = transforms.Compose([
-        transforms.ToPILImage(),
-        RatioPreservingResizer(max_size=max_size),
-        BilateralFilter(d=d, sigma_color=sigma_color, sigma_space=sigma_space),
-        Padder(target_height=target_height, target_width=target_width),
-    ])
 
     for frame in sampled_frames:
-        preprocessed_frame = transform(frame)
+        preprocessed_frame = preprocess_frame(frame,
+                                              d=d,
+                                              sigma_color=sigma_color,
+                                              sigma_space=sigma_space,
+                                              target_height=target_height,
+                                              target_width=target_width,
+                                              max_size=max_size)
+
         preprocessed_frames.append(preprocessed_frame)
 
     return preprocessed_frames
