@@ -1,0 +1,9 @@
+# Paths to images and labels for training and validation sets
+train: /Users/serenatrovalusci/Documents/UNI/data/dataset/train/images
+val: /Users/serenatrovalusci/Documents/UNI/data/dataset/val/images
+
+# Number of classes in your dataset
+nc: 14
+
+# Class names (same order as class IDs)
+names: ['Dumpster', 'Door', 'Prop', 'Push_Pulled_Object', 'Person', 'Animal', 'Construction_Vehicle', 'Construction_Barrier', 'Vehicle', 'Tree', 'Parking_Meter', 'Bike', 'Articulated_Infrastructure', 'Other']  # List of class names
