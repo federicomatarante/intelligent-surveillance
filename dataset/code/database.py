@@ -192,13 +192,13 @@ class ImagesDatabase:
         """
         return list(self.image_paths.keys())
 
-    def get_dimension(self, image_id: str) -> tuple[int, ...]:
+    def get_dimension(self, image_id: str) -> tuple[int, int]:
         """
         Get the dimensions of the image from the database.
         :param image_id: The ID of the image to get dimensions for.
-        :return: A tuple of (height, width, channels) for the image.
+        :return: A tuple of (height, width) for the image.
         """
-        image= self.read(image_id)
+        image = self.read(image_id)
         return image.shape[0], image.shape[1]
 
     def get_all_dimensions(self) -> list[tuple[int, ...]]:
@@ -209,7 +209,3 @@ class ImagesDatabase:
             dimensions.append(self.get_dimension(image_id))
 
         return dimensions
-
-
-
-

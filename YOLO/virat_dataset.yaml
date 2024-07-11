@@ -1,6 +1,6 @@
 # Paths to images and labels for training and validation sets
-train: /Users/serenatrovalusci/Documents/UNI/data/dataset/train/images
-val: /Users/serenatrovalusci/Documents/UNI/data/dataset/val/images
+train: C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\post_processed_images\train\images
+val: C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\post_processed_images\val\images
 
 # Number of classes in your dataset
 nc: 14
