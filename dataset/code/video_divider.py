@@ -9,9 +9,6 @@ from dataset.code.annotations import TrackedObject, Event
 from dataset.code.database import AnnotationsDatabase
 
 
-# pip install moviepy
-
-
 class _VideoSegmentator:
     """
     It's a class responsible to analyze the annotations of a video and extract segmentations useful
@@ -21,7 +18,7 @@ class _VideoSegmentator:
 
     def __init__(self, annotations: Annotations):
         """
-        :param annotations: the annotations to analyez.
+        :param annotations: the annotations to analyze.
         """
         self.annotations = annotations
 

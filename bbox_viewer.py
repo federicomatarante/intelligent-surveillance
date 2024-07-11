@@ -4,7 +4,8 @@ from typing import List
 import cv2
 import numpy as np
 
-from dataset.code.annotations import TrackedObject, Event
+from dataset.code.annotations import TrackedObject, Event, Annotations
+from dataset.code.annotations_parser import AnnotationsReader
 from dataset.code.database import VideosDatabase
 
 
@@ -35,7 +36,7 @@ def _check_overlap(bbox1, bbox2, overlap_threshold=0.9):
     bbox1_area = (bbox1["x2"] - bbox1["x1"] + 1) * (bbox1["y2"] - bbox1["y1"] + 1)
     bbox2_area = (bbox2["x2"] - bbox2["x1"] + 1) * (bbox2["y2"] - bbox2["y1"] + 1)
 
-    overlap_area = intersection_area / max(0.1,float(bbox1_area + bbox2_area - intersection_area))
+    overlap_area = intersection_area / max(0.1, float(bbox1_area + bbox2_area - intersection_area))
 
     # Verifica se un bounding box è completamente contenuto nell'altro
     if (bbox1["x1"] >= bbox2["x1"] and bbox1["x2"] <= bbox2["x2"] and
@@ -170,7 +171,7 @@ def show_tracked_image(image: np.ndarray, events: List[Event] = None, tracked_ob
     cv2.destroyAllWindows()
 
 
-def show_tracked_video(video_frames: np.ndarray, events: List[Event] = None,
+def show_tracked_video(video_frames: np.ndarray | List[np.ndarray], events: List[Event] = None,
                        tracked_objects: List[TrackedObject] = None, fps=30):
     """
     Given a video, it shows all the tracked objects in it as bounding boxes.
@@ -217,3 +218,25 @@ def show_tracked_video(video_frames: np.ndarray, events: List[Event] = None,
 
     cv2.destroyAllWindows()
 
+
+def main():  # TODO remove all
+    annotations_path = r'C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\kml_annotations\all'
+    videos_path = r'C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\videos'
+    reader = AnnotationsReader(annotations_path)
+    videos_db = VideosDatabase(videos_path)
+    while True:
+        random_id = random.choice(reader.annotation_ids)  # VIRAT_S_040103_06_000836_000909
+        random_id = "VIRAT_S_000200_00_000100_000171"
+        if random_id in videos_db.get_ids():
+            break
+    print(random_id)  # VIRAT_S_000200_00_000100_000171
+    annotations: Annotations = reader.read_one_annotation(random_id)
+    video = videos_db.read(random_id)
+
+    show_tracked_video(video)
+    show_tracked_video(video, tracked_objects=annotations.tracked_objects)
+    show_tracked_video(video, events=annotations.events)
+
+
+if __name__ == '__main__':
+    main()

@@ -53,13 +53,18 @@ class DatasetAnalyzer:
                 self.tracking_labels_idS[label].append(annotation_id)
 
     def get_event_labels_distribution(self):
-        return self.event_labels_distribution
+        return {key: value for key, value in
+                sorted(self.event_labels_distribution.items(), key=lambda x: x[1], reverse=True)}
 
     @property
     def events_count(self):
         return sum(self.event_labels_distribution.values())
 
     def get_tracking_labels_distribution(self):
+        return {
+            key: value for key, value in
+            sorted(self.tracking_labels_distribution.items(), key=lambda x: x[1], reverse=True)
+        }
         return self.tracking_labels_distribution
 
     @property
