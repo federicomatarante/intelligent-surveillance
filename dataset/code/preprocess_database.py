@@ -5,6 +5,7 @@ from dataset.code.annotations import Annotations, Event, TrackedObject
 from dataset.code.annotations_parser import AnnotationsReader
 from dataset.code.database import VideosDatabase, ImagesDatabase, AnnotationsDatabase
 from dataset.code.dataset_analyzer import DatasetAnalyzer
+from dataset.code.imageprocessor import ImageProcessor
 from dataset.code.video_divider import VideosDivider
 from dataset.code.videoprocessor import VideoProcessor
 
@@ -14,19 +15,21 @@ from dataset.code.videoprocessor import VideoProcessor
 #   3) track video ID to each track in YOLO
 
 # The folder with all the VIRAT videos.
-RAW_VIDEOS_DATABASE = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\videos"
+RAW_VIDEOS_DATABASE = '/Users/serenatrovalusci/Documents/UNI/data/video_folder'
 # The folder with the associated annotations to the videos.
-RAW_ANNOTATIONS_DATABASE = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\kml_annotations\all"
+RAW_ANNOTATIONS_DATABASE = '/Users/serenatrovalusci/Documents/UNI/data/annotations_folder'
 # The folder that will contain all the events from the VIRAT videos.
-EVENT_VIDEOS_DATABASE = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\events"
+EVENT_VIDEOS_DATABASE = '/Users/serenatrovalusci/Documents/UNI/data/events_folder'
 # The folder that will contain all the processed videos of events from the VIRAT videos.
-PROCESSED_EVENT_VIDEOS_DATABASE = r""r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\processed_events"
+PROCESSED_EVENT_VIDEOS_DATABASE = '/Users/serenatrovalusci/Documents/UNI/data/processed_events_folder'
 # The folder that will contain all the annotations related to the events.
-PROCESSED_EVENT_ANNOTATIONS_DATABASE = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\events_annotations"
+PROCESSED_EVENT_ANNOTATIONS_DATABASE = '/Users/serenatrovalusci/Documents/UNI/data/events_annotations_folder'
 # The folder that will contain all the images containing the object tracking from the VIRAT videos.
-PROCESSED_TRACKING_IMAGES_DATABASE = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\tracking"
+RAW_TRACKING_IMAGES_DATABASE = '/Users/serenatrovalusci/Documents/UNI/data/images_folder'
+# The folder that will contain all the preprocessed images containing the object tracking from the VIRAT videos
+PROCESSED_IMAGES_DATABASE = '/Users/serenatrovalusci/Documents/UNI/data/processed_images_folder'
 # The folder that will contain all the annotations related to the object tracking.
-PROCESSED_TRACKING_ANNOTATIONS_DATABASE = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\tracking_annotations"
+PROCESSED_TRACKING_ANNOTATIONS_DATABASE = '/Users/serenatrovalusci/Documents/UNI/data/processed_annotations_folder'
 
 # The maximum number of images to extract from a video for object tracking.
 IMAGES_PER_VIDEO = 10
@@ -55,7 +58,7 @@ def first_step_processing():
         videos_folder=RAW_VIDEOS_DATABASE,
         events_folder=EVENT_VIDEOS_DATABASE,
         events_annotations_folder=PROCESSED_EVENT_ANNOTATIONS_DATABASE,
-        tracking_folder=PROCESSED_TRACKING_IMAGES_DATABASE,
+        tracking_folder=RAW_TRACKING_IMAGES_DATABASE,
         tracking_annotations_folder=PROCESSED_TRACKING_ANNOTATIONS_DATABASE,
         images_per_video=IMAGES_PER_VIDEO,
         frames_offset=FRAMES_OFFSET,
@@ -80,7 +83,9 @@ def second_step_processing():
     """
     event_videos_database = VideosDatabase(EVENT_VIDEOS_DATABASE)
     processed_events_videos_database = VideosDatabase(PROCESSED_EVENT_VIDEOS_DATABASE)
-    images_tracking_database = ImagesDatabase(PROCESSED_TRACKING_IMAGES_DATABASE)  # TODO preprocess also these?
+    raw_images_database = ImagesDatabase(RAW_TRACKING_IMAGES_DATABASE)  # TODO preprocess also these?
+    processed_images_database = ImagesDatabase(PROCESSED_IMAGES_DATABASE)
+
     print("Processing the videos... ")
     # TODO maybe add verbose to processor
     processor = VideoProcessor(
@@ -88,10 +93,18 @@ def second_step_processing():
         target_database=processed_events_videos_database,
         d=9,  # Size of the Bilateral filter
         sigma_color=75, sigma_space=75,  # Parameters of the Bilateral filter
-
     )
     processor.process_videos()
+    print("Video processing done!")
 
+    print("Processing the images... ")
+    image_processor = ImageProcessor(
+        source_database=raw_images_database,
+        target_database=processed_images_database,
+        d=9, sigma_color=75, sigma_space=75,
+    )
+    image_processor.preprocess_images()
+    print("Image processing done!")
 
 def third_step_processing():
     """

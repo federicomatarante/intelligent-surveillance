@@ -1,6 +1,6 @@
 import os
 import pickle
-from typing import List
+from typing import List, Tuple
 
 import cv2
 import numpy
@@ -191,3 +191,25 @@ class ImagesDatabase:
         :return: The list of the IDs in the database, meaning the elements possible to retrieve from the database.
         """
         return list(self.image_paths.keys())
+
+    def get_dimension(self, image_id: str) -> tuple[int, ...]:
+        """
+        Get the dimensions of the image from the database.
+        :param image_id: The ID of the image to get dimensions for.
+        :return: A tuple of (height, width, channels) for the image.
+        """
+        image= self.read(image_id)
+        return image.shape[0], image.shape[1]
+
+    def get_all_dimensions(self) -> list[tuple[int, ...]]:
+        image_ids = self.get_ids()
+        dimensions = []
+
+        for image_id in image_ids:
+            dimensions.append(self.get_dimension(image_id))
+
+        return dimensions
+
+
+
+

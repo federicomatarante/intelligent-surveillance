@@ -8,7 +8,7 @@ class VideoProcessor:
                  sample_interval=2, target_height=100, target_width=100, max_size=100, extension='mp4', fps=30):
         """
         Preprocesses all the videos from the database.
-        The filters it applies for each video are are:
+        The filters it applies for each video:
          - Frame sampling: it decreases the frame rate of the video.
          - Downsample: it downsamples the frames preserving their aspect ratio.
          - Bilateral filtering: it applies bilateral filtering on the frames making them more smooth and preserving edges.

@@ -1,10 +1,9 @@
 from typing import List
-
 import PIL
+from PIL import Image, ImageOps
 import cv2
 import numpy as np
 import torchvision.transforms as transforms
-from PIL import Image, ImageOps
 
 
 class BilateralFilter:
@@ -145,7 +144,7 @@ def preprocess_frame(frame: np.ndarray, d: int = 9, sigma_color: int = 75, sigma
 
 def preprocess_frames(frames: List[np.ndarray], d: int = 9, sigma_color: int = 75, sigma_space: int = 75,
                       sample_interval: int = 2,
-                      target_height: int = 100, target_width: int = 100, max_size: int = 100) -> List[PIL.Image]:
+                      target_height: int = 100, target_width: int = 100, max_size: int = 100):
     """
     Preprocesses a list of frames to make them suitable for training.
     The filters it applies are:
