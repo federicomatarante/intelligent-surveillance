@@ -1,9 +1,12 @@
 from typing import List
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torchvision.models as models
 from torchvision.models.video import R2Plus1D_18_Weights
+
+from data.annotations import TrackedObject, tracked_object_labels
 
 
 class ResNet2Plus1D(nn.Module):
@@ -68,18 +71,27 @@ class ResNet2Plus1D(nn.Module):
         return self.softmax(x)
 
 
-class ResNet3DClassifier:
+class ResNet2P1DClassifier:
 
     def __init__(self, model: ResNet2Plus1D):
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        model.to(self.device)
         self.model = model
 
-    def classify(self, video, objects):
-        predictions = self.model(video, objects)
-        class_id = torch.argmax(predictions, dim=1)
+    def classify(self, video: np.ndarray, objects: List[TrackedObject]):
+        video = torch.from_numpy(video).float().to(self.device)
+        video = video.permute(0, 3, 1, 2)
+        objects_count = [0 for _ in range(len(tracked_object_labels))]
+        for obj in objects:
+            objects_count[obj.label] += 1
+
+        objects_count = torch.tensor(objects_count).to(self.device)
+        predictions = self.model(video, objects_count)
+        class_id = torch.argmax(predictions.cpu(), dim=1)
         return class_id
 
 
-class ReducedResNet3DClassifier(ResNet3DClassifier):
+class ReducedResNet2P1DClassifier(ResNet2P1DClassifier):
 
     def __init__(self, model: ResNet2Plus1D, classes_ids: List[int]):
         """
@@ -91,6 +103,5 @@ class ReducedResNet3DClassifier(ResNet3DClassifier):
         self.classes_ids = classes_ids
 
     def classify(self, video, objects):
-        predictions = self.model(video, objects)
-        class_id = torch.argmax(predictions, dim=1)
+        class_id = super().classify(video, objects)
         return self.classes_ids[class_id]

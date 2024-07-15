@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional
 
-from dataset.code.annotations import event_types, tracked_object_labels
-from dataset.code.database import AnnotationsDatabase
+from data.annotations import event_types, tracked_object_labels
+from data.database import AnnotationsDatabase
 
 
 class DatasetAnalyzer:

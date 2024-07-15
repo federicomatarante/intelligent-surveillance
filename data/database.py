@@ -1,12 +1,12 @@
 import os
 import pickle
-from typing import List, Tuple
+from typing import List
 
 import cv2
 import numpy
 import numpy as np
 
-from dataset.code.annotations import Annotations
+from data.annotations import Annotations
 
 
 def show_video(video: List[np.ndarray]):
@@ -83,6 +83,7 @@ class VideosDatabase:
         :param database_path: The path to the folder where the video database is located.
         """
         self.database_path = database_path
+        os.makedirs(database_path, exist_ok=True)
         self.video_paths = {
             ".".join(file.split(".")[:-1]): os.path.join(database_path, file) for file in os.listdir(database_path)
         }
@@ -141,6 +142,20 @@ class VideosDatabase:
         """
         return list(self.video_paths.keys())
 
+    @staticmethod
+    def read_video(video_path: str):
+        cap = cv2.VideoCapture(video_path)
+
+        frames = []
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frames.append(frame)
+
+        cap.release()
+        return frames
 
 class ImagesDatabase:
     """

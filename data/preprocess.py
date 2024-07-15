@@ -178,4 +178,4 @@ def preprocess_frames(frames: List[np.ndarray], d: int = 9, sigma_color: int = 7
 
         preprocessed_frames.append(preprocessed_frame)
 
-    return preprocessed_frames
+    return np.stack(preprocessed_frames)

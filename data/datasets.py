@@ -5,8 +5,8 @@ import torch
 from torch.utils.data import Dataset
 from torchvision.transforms import ToTensor
 
-from dataset.code.annotations import tracked_object_labels, event_types
-from dataset.code.database import AnnotationsDatabase, VideosDatabase, ImagesDatabase
+from data.annotations import tracked_object_labels, event_types
+from data.database import AnnotationsDatabase, VideosDatabase, ImagesDatabase
 
 
 class ActionRecognitionDataset(Dataset):

@@ -1,6 +1,6 @@
 import numpy as np
-from dataset.code.database import VideosDatabase
-from dataset.code.preprocess import preprocess_frames
+from data.database import VideosDatabase
+from data.preprocess import preprocess_frames
 
 
 class VideoProcessor:

@@ -4,17 +4,17 @@ import subprocess
 import time
 from typing import Tuple, Any
 
-import numpy as np
 import torch
 from torch import nn, optim
 from torch.nn import Module
 from torch.utils.data import DataLoader, random_split, SubsetRandomSampler
 
-from dataset.code.annotations import tracked_object_labels
-from dataset.code.database import AnnotationsDatabase
-from dataset.code.dataset_analyzer import DatasetAnalyzer
-from dataset.code.datasets import ActionRecognitionDataset, ReducedActionRecognitionDataset, VideoCollater
-from resnet_model.resnet import ResNet2Plus1D
+from data.annotations import tracked_object_labels
+from data.database import AnnotationsDatabase
+from data.dataset_analyzer import DatasetAnalyzer
+from data.datasets import ActionRecognitionDataset, ReducedActionRecognitionDataset, VideoCollater
+from preprocess_database import PROCESSED_EVENT_VIDEOS_DATABASE, PROCESSED_EVENT_ANNOTATIONS_DATABASE
+from resnet.resnet import ResNet2Plus1D
 
 
 def get_gpu_memory():
@@ -283,8 +283,8 @@ def train(
 
 
 def main():
-    VIDEOS_DIR = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\processed_events"
-    ANNOTATIONS_DIR = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\events_annotations"
+    VIDEOS_DIR = PROCESSED_EVENT_VIDEOS_DATABASE
+    ANNOTATIONS_DIR = PROCESSED_EVENT_ANNOTATIONS_DATABASE
 
     model = ResNet2Plus1D(
         num_classes=12,
@@ -292,7 +292,6 @@ def main():
         hidden_size=32,
         unfrozen_layers=6
     )
-
 
     # New IDS will be respectively: [0,1,2,3,...]
     reduced_classes = [0, 9, 26, 38, 37, 31, 35, 15, 19, 8, 20, 12]
@@ -308,19 +307,21 @@ def main():
     classes_proportions = tuple(dataset_analyzer.get_event_labels_distribution().values())[0:12]
     train_set, test_set = random_split(dataset, [0.8, 0.2])
     print("Train Dataset size: ", len(train_set))
-    model, training_data = train(model=model,
-                                 dataset=dataset,
-                                 num_epochs=30 * 6,
-                                 batch_size=2,
-                                 classes_proportions=classes_proportions,
-                                 verbose=1,
-                                 sub_dataset_size=2000,
-                                 val_batch_size=2,
-                                 directory="models",
-                                 save_every_epochs=30,
-                                 test_dataset=test_set,
-                                 model_name="ResNet2P1",
-                                 )
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    train(model=model,
+          dataset=dataset,
+          num_epochs=30 * 6,
+          batch_size=2,
+          classes_proportions=classes_proportions,
+          verbose=1,
+          sub_dataset_size=2000,
+          val_batch_size=2,
+          directory=os.path.join(script_dir, "models"),
+          save_every_epochs=120,
+          test_dataset=test_set,
+          model_name="ResNet2P1",
+          )
 
 
 if __name__ == '__main__':

@@ -48,6 +48,21 @@ class BoundingBox:
         """
         return self.y2 - self.y1 + 1
 
+    @staticmethod
+    def calculate_iou(box1: 'BoundingBox', box2: 'BoundingBox'):
+        x1 = max(box1.x1, box2.x1)
+        y1 = max(box1.y1, box2.y1)
+        x2 = min(box1.x2, box2.x2)
+        y2 = min(box1.y2, box2.y2)
+
+        intersection_area = max(0, x2 - x1) * max(0, y2 - y1)
+        box1_area = (box1.x2 - box1.x1) * (box1.y2 - box1.y1)
+        box2_area = (box2.x2 - box2.x1) * (box2.y2 - box2.y1)
+        union_area = box1_area + box2_area - intersection_area
+        if union_area == 0:
+            return 0
+        return intersection_area / union_area
+
     def to_json(self):
         """
         Converts the current BoundingBox object in a dict containint its properties.
@@ -462,6 +477,9 @@ class Event:
                 BoundingBox(frame=frame, x1=min_x1, y1=min_y1, x2=x2, y2=y2, occlusion=0)
             )
         return bounding_boxes
+
+    def __hash__(self):
+        return hash(self.event_id)
 
     @staticmethod
     def from_json(json: Dict[Any, Any]) -> 'Event':

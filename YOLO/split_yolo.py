@@ -1,15 +1,23 @@
 import os
+import yaml
 
 from torch.utils.data import random_split
 from torchvision.transforms import ToPILImage
 
 from YOLO.YoloDataset import YOLODataset
-from dataset.code.database import AnnotationsDatabase
-from dataset.code.database import ImagesDatabase
+from data.database import AnnotationsDatabase
+from data.database import ImagesDatabase
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
 
 
-# Function to save datasets
 def save_dataset(dataset, images_dir, labels_dir):
+    """
+    Save dataset to disk.
+    :param dataset: dataset to be saved.
+    :param images_dir: directory to save images.
+    :param labels_dir: directory to save labels.
+    """
     to_pil = ToPILImage()
     for i, (image, annotation) in enumerate(dataset):
         # Converti l'immagine in formato numpy array
@@ -28,13 +36,15 @@ def save_dataset(dataset, images_dir, labels_dir):
                 bbox_str = ' '.join(map(str, bbox.tolist()))
                 f.write(f"{bbox_str}\n")
 
-def main():
-    # Define the directory path where processed images are stored
-    images_dir = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\tracking"
-    annotations_dir = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\tracking_annotations"
 
-    images_db = ImagesDatabase(images_dir)
-    annotations_db = AnnotationsDatabase(annotations_dir)
+def create_yolo_dataset(raw_images_dir: str, images_annotations_dir: str, images_dir: str):
+    """
+    Transforms the dataset to a format valid for YOLO.
+    """
+    # Define the directory path where processed images are stored
+
+    images_db = ImagesDatabase(raw_images_dir)
+    annotations_db = AnnotationsDatabase(images_annotations_dir)
 
     ids = images_db.get_ids()
 
@@ -51,13 +61,12 @@ def main():
     train_dataset, val_dataset, test_dataset = random_split(dataset, [train_size, val_size, test_size])
 
     # Paths to save the datasets
-    base_dir = r"C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\post_processed_images"
-    train_images_dir = os.path.join(base_dir, 'train/images')
-    train_labels_dir = os.path.join(base_dir, 'train/labels')
-    val_images_dir = os.path.join(base_dir, 'val/images')
-    val_labels_dir = os.path.join(base_dir, 'val/labels')
-    test_images_dir = os.path.join(base_dir, 'test/images')
-    test_labels_dir = os.path.join(base_dir, 'test/labels')
+    train_images_dir = os.path.join(images_dir, 'train/images')
+    train_labels_dir = os.path.join(images_dir, 'train/labels')
+    val_images_dir = os.path.join(images_dir, 'val/images')
+    val_labels_dir = os.path.join(images_dir, 'val/labels')
+    test_images_dir = os.path.join(images_dir, 'test/images')
+    test_labels_dir = os.path.join(images_dir, 'test/labels')
 
     # Create directories if they do not exist
     os.makedirs(train_images_dir, exist_ok=True)
@@ -76,8 +85,16 @@ def main():
     # Save test dataset
     save_dataset(test_dataset, test_images_dir, test_labels_dir)
 
-    print("Datasets saved successfully.")
+    # Creating YAML file
+    file_content = {
+        'train': train_images_dir,
+        'val': val_images_dir,
+        'nc': 14,
+        'names': ['Dumpster', 'Door', 'Prop', 'Push_Pulled_Object', 'Person', 'Animal', 'Construction_Vehicle',
+                  'Construction_Barrier', 'Vehicle', 'Tree', 'Parking_Meter', 'Bike', 'Articulated_Infrastructure',
+                  'Other']
+    }
 
-
-if __name__ == '__main__':
-    main()
+    with open(os.path.join(script_dir, 'virat_dataset.yaml'), 'w') as file:
+        yaml.dump(file_content, file)
+        print("Datasets saved successfully.")

@@ -4,7 +4,7 @@ from typing import Dict, List, Any, Tuple
 
 import yaml
 
-from dataset.code.annotations import BoundingBox, TrackedObject, Event, Annotations
+from data.annotations import BoundingBox, TrackedObject, Event, Annotations
 
 
 class _KMLFileReader:

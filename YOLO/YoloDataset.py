@@ -4,8 +4,8 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-from dataset.code.database import ImagesDatabase
-from dataset.code.preprocess import preprocess_frame
+from data.database import ImagesDatabase
+from data.preprocess import preprocess_frame
 
 
 class YOLODataset(Dataset):

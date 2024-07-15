@@ -1,9 +1,18 @@
-# Paths to images and labels for training and validation sets
-train: C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\post_processed_images\train\images
-val: C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset\preprocessed_dataset\post_processed_images\val\images
-
-# Number of classes in your dataset
+names:
+- Dumpster
+- Door
+- Prop
+- Push_Pulled_Object
+- Person
+- Animal
+- Construction_Vehicle
+- Construction_Barrier
+- Vehicle
+- Tree
+- Parking_Meter
+- Bike
+- Articulated_Infrastructure
+- Other
 nc: 14
-
-# Class names (same order as class IDs)
-names: ['Dumpster', 'Door', 'Prop', 'Push_Pulled_Object', 'Person', 'Animal', 'Construction_Vehicle', 'Construction_Barrier', 'Vehicle', 'Tree', 'Parking_Meter', 'Bike', 'Articulated_Infrastructure', 'Other']  # List of class names
+train: C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset/processed_images\train/images
+val: C:\Users\feder\PycharmProjects\intelligent-surveillance\dataset/processed_images\val/images

@@ -4,9 +4,8 @@ from typing import Dict, List, Tuple, Any, Set
 
 import cv2
 
-from annotations import Annotations, BoundingBox
-from dataset.code.annotations import TrackedObject, Event
-from dataset.code.database import AnnotationsDatabase
+from data.annotations import TrackedObject, Event, Annotations, BoundingBox
+from data.database import AnnotationsDatabase
 
 
 class _VideoSegmentator:
@@ -98,7 +97,8 @@ class _VideoSegmentator:
             frame: frames[frame] for frame in sorted(frames_numbers)[::sampling_rate]
         }
 
-    def get_events_tracking_segmentation(self, video_size: Tuple[int, int], offset: int = 5, max_duration: int = None) -> list[
+    def get_events_tracking_segmentation(self, video_size: Tuple[int, int], offset: int = 5,
+                                         max_duration: int = None) -> list[
         tuple[Event, dict[str, Any]]]:
         """
         Returns a mapping of each event to the coordinates of the part of the video
@@ -121,7 +121,7 @@ class _VideoSegmentator:
         event_tracks: List[Tuple[Event, Dict[str, Any]]] = []
         for event in self.annotations.events:
             max_frame = event.start_frame if max_duration is None else event.start_frame + max_duration - 1
-            bounding_boxes = [bbox for bbox in event.bounding_boxes if bbox.frame <= max_frame] # TODO test
+            bounding_boxes = [bbox for bbox in event.bounding_boxes if bbox.frame <= max_frame]
 
             min_x1 = min(bounding_boxes, key=lambda x: x.x1).x1
             min_y1 = min(bounding_boxes, key=lambda x: x.y1).y1
@@ -464,5 +464,7 @@ class VideosDivider:
                 print(f"\tVideo id: {video_id}")
             i += 1
             if video_id not in self.video_paths:
+                if verbose_level:
+                    print("\tVideo not found.")
                 continue
             self._divide_video(video_id, annotations)
