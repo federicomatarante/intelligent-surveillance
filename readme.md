@@ -45,6 +45,7 @@ Abbiamo usato il dataset VIRAT:
 - 41 tipi di azioni/eventi diversi
 
 **Consigliato**: vedi la presentazione per maggiori dettagli.
+
 ---
 
 ## 🇬🇧 English
